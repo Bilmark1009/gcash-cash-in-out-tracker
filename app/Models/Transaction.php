@@ -7,18 +7,51 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Transaction extends Model
 {
-    protected $fillable = ['transaction_date', 'type', 'amount', 'fee', 'category_id', 'notes'];
+    protected $fillable = [
+        'user_id',
+        'transaction_date',
+        'type',
+        'amount',
+        'fee',
+        'fee_percentage',
+        'fee_amount',
+        'gcash_balance_before',
+        'gcash_balance_after',
+        'cash_balance_before',
+        'cash_balance_after',
+        'category_id',
+        'notes',
+    ];
 
     protected $casts = [
         'transaction_date' => 'date',
         'type' => 'string',
         'amount' => 'decimal:2',
         'fee' => 'decimal:2',
+        'fee_percentage' => 'decimal:2',
+        'fee_amount' => 'decimal:2',
+        'gcash_balance_before' => 'decimal:2',
+        'gcash_balance_after' => 'decimal:2',
+        'cash_balance_before' => 'decimal:2',
+        'cash_balance_after' => 'decimal:2',
     ];
 
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Calculate fee amount based on percentage.
+     */
+    public function calculateFeeAmount(float $amount, float $feePercentage): float
+    {
+        return round($amount * ($feePercentage / 100), 2);
     }
 
     /**
@@ -58,4 +91,33 @@ class Transaction extends Model
             return -($this->amount + $this->fee);
         }
     }
-}
+
+    /**
+     * Calculate balance changes for cash-in transaction.
+     */
+    public function calculateCashInBalances(float $currentGCashBalance, float $currentCashBalance): array
+    {
+        $feeAmount = $this->fee_amount ?? $this->calculateFeeAmount($this->amount, $this->fee_percentage);
+        
+        return [
+            'gcash_balance_before' => $currentGCashBalance,
+            'gcash_balance_after' => $currentGCashBalance + $this->amount,
+            'cash_balance_before' => $currentCashBalance,
+            'cash_balance_after' => $currentCashBalance + $feeAmount,
+        ];
+    }
+
+    /**
+     * Calculate balance changes for cash-out transaction.
+     */
+    public function calculateCashOutBalances(float $currentGCashBalance, float $currentCashBalance): array
+    {
+        $feeAmount = $this->fee_amount ?? $this->calculateFeeAmount($this->amount, $this->fee_percentage);
+        
+        return [
+            'gcash_balance_before' => $currentGCashBalance,
+            'gcash_balance_after' => $currentGCashBalance - $this->amount,
+            'cash_balance_before' => $currentCashBalance,
+            'cash_balance_after' => $currentCashBalance - ($this->amount - $feeAmount),
+        ];
+    }
