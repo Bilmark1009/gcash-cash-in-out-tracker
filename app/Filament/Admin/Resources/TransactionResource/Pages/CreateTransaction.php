@@ -3,20 +3,24 @@
 namespace App\Filament\Admin\Resources\TransactionResource\Pages;
 
 use App\Filament\Admin\Resources\TransactionResource;
-use App\Models\Transaction;
+use App\Services\TransactionService;
 use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Support\Facades\Auth;
 
 class CreateTransaction extends CreateRecord
 {
     protected static string $resource = TransactionResource::class;
 
-    protected function mutateFormDataBeforeCreate(array $data): array
+    protected function handleRecordCreation(array $data): \Illuminate\Database\Eloquent\Model
     {
-        if (empty($data['fee'])) {
-            $data['fee'] = Transaction::calculateFee($data['amount'], $data['type']);
-        }
-        return $data;
+        $user = Auth::user();
+        $service = new TransactionService();
+
+        // Add user_id to data
+        $data['user_id'] = $user->id;
+
+        return $service->processTransaction($user, $data);
     }
 
     protected function getRedirectUrl(): string
@@ -24,3 +28,4 @@ class CreateTransaction extends CreateRecord
         return $this->getResource()::getUrl('index');
     }
 }
+

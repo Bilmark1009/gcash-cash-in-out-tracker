@@ -4,12 +4,14 @@ namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\TransactionResource\Pages;
 use App\Models\Transaction;
+use App\Services\TransactionService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class TransactionResource extends Resource
 {
@@ -23,39 +25,113 @@ class TransactionResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\DatePicker::make('transaction_date')
-                    ->required()
-                    ->default(now())
-                    ->native(false),
-                Forms\Components\Select::make('type')
-                    ->required()
-                    ->options([
-                        'cash-in' => 'Cash In',
-                        'cash-out' => 'Cash Out',
+                Forms\Components\Section::make('Transaction Details')
+                    ->schema([
+                        Forms\Components\DatePicker::make('transaction_date')
+                            ->required()
+                            ->default(now())
+                            ->native(false)
+                            ->label('Date'),
+                        Forms\Components\Select::make('type')
+                            ->required()
+                            ->options([
+                                'cash-in' => 'Cash In',
+                                'cash-out' => 'Cash Out',
+                            ])
+                            ->native(false)
+                            ->reactive()
+                            ->label('Transaction Type'),
+                        Forms\Components\TextInput::make('amount')
+                            ->required()
+                            ->numeric()
+                            ->inputMode('decimal')
+                            ->minValue(0.01)
+                            ->reactive()
+                            ->live(onBlur: true)
+                            ->label('Amount (₱)'),
+                        Forms\Components\TextInput::make('fee_percentage')
+                            ->required()
+                            ->numeric()
+                            ->inputMode('decimal')
+                            ->minValue(0)
+                            ->maxValue(100)
+                            ->step(0.01)
+                            ->reactive()
+                            ->live(onBlur: true)
+                            ->afterStateHydrated(function (Forms\Components\TextInput $component, $state, $record) {
+                                if (!$state && $record) {
+                                    $component->state($record->fee_percentage);
+                                } elseif (!$state && Auth::check()) {
+                                    $component->state(Auth::user()->default_fee_percentage);
+                                }
+                            })
+                            ->label('Fee Percentage (%)'),
                     ])
-                    ->native(false)
-                    ->reactive(),
-                Forms\Components\TextInput::make('amount')
-                    ->required()
-                    ->numeric()
-                    ->inputMode('decimal')
-                    ->minValue(0.01)
-                    ->reactive()
-                    ->live(onBlur: true),
-                Forms\Components\TextInput::make('fee')
-                    ->required()
-                    ->numeric()
-                    ->inputMode('decimal')
-                    ->minValue(0)
-                    ->readOnly(),
-                Forms\Components\Select::make('category_id')
-                    ->relationship('category', 'name')
-                    ->required()
-                    ->preload(),
-                Forms\Components\Textarea::make('notes')
-                    ->columnSpanFull(),
-            ])
-            ->columns(2);
+                    ->columns(2),
+
+                Forms\Components\Section::make('Fee & Balance Preview')
+                    ->schema([
+                        Forms\Components\TextInput::make('fee_amount')
+                            ->label('Fee Amount (₱)')
+                            ->numeric()
+                            ->readOnly()
+                            ->disabled()
+                            ->helperText('Auto-calculated based on amount and fee percentage')
+                            ->afterStateUpdated(function ($state, Forms\Set $set, $get) {
+                                $amount = $get('amount');
+                                $feePercentage = $get('fee_percentage');
+                                if ($amount && $feePercentage) {
+                                    $fee = round($amount * ($feePercentage / 100), 2);
+                                    $set('fee_amount', $fee);
+                                }
+                            })
+                            ->live(onBlur: true),
+                        
+                        Forms\Components\Placeholder::make('balance_preview')
+                            ->label('Balance Preview')
+                            ->content(function ($get) {
+                                $user = Auth::user();
+                                if (!$user) return 'N/A';
+                                
+                                $type = $get('type');
+                                $amount = (float) ($get('amount') ?? 0);
+                                $feePercentage = (float) ($get('fee_percentage') ?? $user->default_fee_percentage);
+                                $feeAmount = round($amount * ($feePercentage / 100), 2);
+                                
+                                $currentGCash = $user->gcash_balance;
+                                $currentCash = $user->cash_balance;
+                                
+                                if ($type === 'cash-in') {
+                                    $newGCash = $currentGCash + $amount;
+                                    $newCash = $currentCash + $feeAmount;
+                                } else {
+                                    $newGCash = $currentGCash - $amount;
+                                    $newCash = $currentCash - ($amount - $feeAmount);
+                                }
+                                
+                                return view('filament.balance-preview', [
+                                    'currentGCash' => $currentGCash,
+                                    'currentCash' => $currentCash,
+                                    'newGCash' => $newGCash,
+                                    'newCash' => $newCash,
+                                ]);
+                            }),
+                    ])
+                    ->columns(1),
+
+                Forms\Components\Section::make('Additional Info')
+                    ->schema([
+                        Forms\Components\Select::make('category_id')
+                            ->relationship('category', 'name')
+                            ->required()
+                            ->preload()
+                            ->label('Category'),
+                        Forms\Components\Textarea::make('notes')
+                            ->columnSpanFull()
+                            ->label('Notes / Remarks'),
+                    ])
+                    ->columns(2),
+            ]);
     }
 
     public static function table(Table $table): Table
@@ -72,7 +148,8 @@ class TransactionResource extends Resource
                         'success' => 'cash-in',
                         'danger' => 'cash-out',
                     ])
-                    ->sortable(),
+                    ->sortable()
+                    ->label('Type'),
                 Tables\Columns\TextColumn::make('category.name')
                     ->searchable()
                     ->sortable()
@@ -80,14 +157,28 @@ class TransactionResource extends Resource
                 Tables\Columns\TextColumn::make('amount')
                     ->money('PHP', locale: 'en_US')
                     ->sortable()
-                    ->alignment('right'),
-                Tables\Columns\TextColumn::make('fee')
+                    ->alignment('right')
+                    ->label('Amount'),
+                Tables\Columns\TextColumn::make('fee_percentage')
+                    ->numeric(decimalPlaces: 2)
+                    ->sortable()
+                    ->alignment('right')
+                    ->label('Fee %'),
+                Tables\Columns\TextColumn::make('fee_amount')
                     ->money('PHP', locale: 'en_US')
                     ->sortable()
-                    ->alignment('right'),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
+                    ->alignment('right')
+                    ->label('Profit (₱)'),
+                Tables\Columns\TextColumn::make('gcash_balance_after')
+                    ->money('PHP', locale: 'en_US')
                     ->sortable()
+                    ->alignment('right')
+                    ->label('GCash Balance'),
+                Tables\Columns\TextColumn::make('cash_balance_after')
+                    ->money('PHP', locale: 'en_US')
+                    ->sortable()
+                    ->alignment('right')
+                    ->label('Cash Balance')
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('transaction_date', 'desc')
@@ -145,3 +236,4 @@ class TransactionResource extends Resource
         ];
     }
 }
+
