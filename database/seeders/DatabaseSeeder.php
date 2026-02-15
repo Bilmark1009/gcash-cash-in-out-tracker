@@ -5,6 +5,8 @@ namespace Database\Seeders;
 use App\Models\User;
 use App\Models\Category;
 use App\Models\Transaction;
+use App\Models\ProfitTracking;
+use App\Services\TransactionService;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
@@ -18,12 +20,24 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create admin user
-        User::factory()->create([
+        // Create admin user with initial balances
+        $user = User::factory()->create([
             'name' => 'Admin User',
             'email' => 'admin@peraly.com',
             'business_name' => 'My Business',
             'phone_number' => '09123456789',
+            'gcash_balance' => 50000,
+            'cash_balance' => 10000,
+            'default_fee_percentage' => 2.0,
+        ]);
+
+        // Create profit tracking for user
+        ProfitTracking::create([
+            'user_id' => $user->id,
+            'total_profit' => 0,
+            'profit_from_cash_in' => 0,
+            'profit_from_cash_out' => 0,
+            'transaction_count' => 0,
         ]);
 
         // Create sample categories
@@ -47,7 +61,8 @@ class DatabaseSeeder extends Seeder
             Category::create($category);
         }
 
-        // Create sample transactions for the past 30 days
+        // Create sample transactions using TransactionService
+        $transactionService = new TransactionService();
         $now = Carbon::now();
         $cashInCategories = Category::where('type', 'cash-in')->pluck('id')->toArray();
         $cashOutCategories = Category::where('type', 'cash-out')->pluck('id')->toArray();
@@ -56,33 +71,42 @@ class DatabaseSeeder extends Seeder
         for ($i = 0; $i < 15; $i++) {
             $amount = rand(5000, 50000);
             $date = $now->copy()->subDays(rand(0, 29));
-            $fee = Transaction::calculateFee($amount, 'cash-in');
+            $feePercentage = rand(1, 3); // Random fee percentage between 1-3%
 
-            Transaction::create([
-                'transaction_date' => $date,
-                'type' => 'cash-in',
-                'amount' => $amount,
-                'fee' => $fee,
-                'category_id' => $cashInCategories[array_rand($cashInCategories)],
-                'notes' => 'Sample transaction',
-            ]);
+            try {
+                $transactionService->processTransaction($user, [
+                    'transaction_date' => $date->toDateString(),
+                    'type' => 'cash-in',
+                    'amount' => $amount,
+                    'fee_percentage' => $feePercentage,
+                    'category_id' => $cashInCategories[array_rand($cashInCategories)],
+                    'notes' => 'Sample cash-in transaction',
+                ]);
+            } catch (\Exception $e) {
+                // Log error but continue seeding
+                \Log::error('Error seeding transaction: ' . $e->getMessage());
+            }
         }
 
         // Cash Out transactions
         for ($i = 0; $i < 12; $i++) {
             $amount = rand(3000, 30000);
             $date = $now->copy()->subDays(rand(0, 29));
-            $fee = Transaction::calculateFee($amount, 'cash-out');
+            $feePercentage = rand(1, 3); // Random fee percentage between 1-3%
 
-            Transaction::create([
-                'transaction_date' => $date,
-                'type' => 'cash-out',
-                'amount' => $amount,
-                'fee' => $fee,
-                'category_id' => $cashOutCategories[array_rand($cashOutCategories)],
-                'notes' => 'Sample transaction',
-            ]);
+            try {
+                $transactionService->processTransaction($user, [
+                    'transaction_date' => $date->toDateString(),
+                    'type' => 'cash-out',
+                    'amount' => $amount,
+                    'fee_percentage' => $feePercentage,
+                    'category_id' => $cashOutCategories[array_rand($cashOutCategories)],
+                    'notes' => 'Sample cash-out transaction',
+                ]);
+            } catch (\Exception $e) {
+                // Log error but continue seeding
+                \Log::error('Error seeding transaction: ' . $e->getMessage());
+            }
         }
     }
 }
-
