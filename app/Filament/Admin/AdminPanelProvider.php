@@ -4,6 +4,7 @@ namespace App\Filament\Admin;
 
 use App\Filament\Admin\Pages\Dashboard;
 use App\Filament\Admin\Pages\Onboarding;
+use App\Http\Middleware\EnsureUserIsOnboarded;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -58,6 +59,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+                EnsureUserIsOnboarded::class,
             ]);
     }
 }

@@ -1,4 +1,4 @@
-<x-filament-widgets::widget>
+<x-filament-panels::page>
     <x-filament::section>
         <div class="mx-auto max-w-2xl space-y-6">
             <div class="text-center">
@@ -23,4 +23,4 @@
             </form>
         </div>
     </x-filament::section>
-</x-filament-widgets::widget>
+</x-filament-panels::page>

@@ -7,6 +7,8 @@ use App\Models\Transaction;
 use App\Services\TransactionService;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -39,15 +41,17 @@ class TransactionResource extends Resource
                                 'cash-out' => 'Cash Out',
                             ])
                             ->native(false)
-                            ->reactive()
+                            ->live()
                             ->label('Transaction Type'),
                         Forms\Components\TextInput::make('amount')
                             ->required()
                             ->numeric()
                             ->inputMode('decimal')
                             ->minValue(0.01)
-                            ->reactive()
                             ->live(onBlur: true)
+                            ->afterStateUpdated(function (Set $set, Get $get) {
+                                static::updateFeeAmount($set, $get);
+                            })
                             ->label('Amount (₱)'),
                         Forms\Components\TextInput::make('fee_percentage')
                             ->required()
@@ -56,14 +60,17 @@ class TransactionResource extends Resource
                             ->minValue(0)
                             ->maxValue(100)
                             ->step(0.01)
-                            ->reactive()
                             ->live(onBlur: true)
-                            ->afterStateHydrated(function (Forms\Components\TextInput $component, $state, $record) {
+                            ->afterStateUpdated(function (Set $set, Get $get) {
+                                static::updateFeeAmount($set, $get);
+                            })
+                            ->afterStateHydrated(function (Forms\Components\TextInput $component, $state, $record, Set $set, Get $get) {
                                 if (!$state && $record) {
                                     $component->state($record->fee_percentage);
                                 } elseif (!$state && Auth::check()) {
                                     $component->state(Auth::user()->default_fee_percentage);
                                 }
+                                static::updateFeeAmount($set, $get);
                             })
                             ->label('Fee Percentage (%)'),
                     ])
@@ -75,17 +82,9 @@ class TransactionResource extends Resource
                             ->label('Fee Amount (₱)')
                             ->numeric()
                             ->readOnly()
-                            ->disabled()
+                            ->dehydrated()
                             ->helperText('Auto-calculated based on amount and fee percentage')
-                            ->afterStateUpdated(function ($state, Forms\Set $set, $get) {
-                                $amount = $get('amount');
-                                $feePercentage = $get('fee_percentage');
-                                if ($amount && $feePercentage) {
-                                    $fee = round($amount * ($feePercentage / 100), 2);
-                                    $set('fee_amount', $fee);
-                                }
-                            })
-                            ->live(onBlur: true),
+                            ->live(),
                         
                         Forms\Components\Placeholder::make('balance_preview')
                             ->label('Balance Preview')
@@ -132,6 +131,19 @@ class TransactionResource extends Resource
                     ])
                     ->columns(2),
             ]);
+    }
+
+    public static function updateFeeAmount(Set $set, Get $get): void
+    {
+        $amount = (float) ($get('amount') ?? 0);
+        $feePercentage = (float) ($get('fee_percentage') ?? 0);
+        
+        if ($amount > 0 && $feePercentage > 0) {
+            $fee = round($amount * ($feePercentage / 100), 2);
+            $set('fee_amount', $fee);
+        } else {
+            $set('fee_amount', 0);
+        }
     }
 
     public static function table(Table $table): Table
