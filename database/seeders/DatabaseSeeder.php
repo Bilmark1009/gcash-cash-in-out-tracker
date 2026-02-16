@@ -20,25 +20,31 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create admin user with initial balances
-        $user = User::factory()->create([
-            'name' => 'Admin User',
-            'email' => 'admin@peraly.com',
-            'business_name' => 'My Business',
-            'phone_number' => '09123456789',
-            'gcash_balance' => 50000,
-            'cash_balance' => 10000,
-            'default_fee_percentage' => 2.0,
-        ]);
+        // Create or get admin user without initial balances (user must onboard)
+        $user = User::firstOrCreate(
+            ['email' => 'admin@peraly.com'],
+            [
+                'name' => 'Admin User',
+                'business_name' => 'My Business',
+                'phone_number' => '09123456789',
+                'gcash_balance' => 0,
+                'cash_balance' => 0,
+                'default_fee_percentage' => 2.0,
+                'onboarded' => false,
+                'password' => bcrypt('password'),
+            ]
+        );
 
-        // Create profit tracking for user
-        ProfitTracking::create([
-            'user_id' => $user->id,
-            'total_profit' => 0,
-            'profit_from_cash_in' => 0,
-            'profit_from_cash_out' => 0,
-            'transaction_count' => 0,
-        ]);
+        // Create or get profit tracking for user
+        ProfitTracking::firstOrCreate(
+            ['user_id' => $user->id],
+            [
+                'total_profit' => 0,
+                'profit_from_cash_in' => 0,
+                'profit_from_cash_out' => 0,
+                'transaction_count' => 0,
+            ]
+        );
 
         // Create sample categories
         $categories = [
@@ -58,55 +64,7 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($categories as $category) {
-            Category::create($category);
-        }
-
-        // Create sample transactions using TransactionService
-        $transactionService = new TransactionService();
-        $now = Carbon::now();
-        $cashInCategories = Category::where('type', 'cash-in')->pluck('id')->toArray();
-        $cashOutCategories = Category::where('type', 'cash-out')->pluck('id')->toArray();
-
-        // Cash In transactions
-        for ($i = 0; $i < 15; $i++) {
-            $amount = rand(5000, 50000);
-            $date = $now->copy()->subDays(rand(0, 29));
-            $feePercentage = rand(1, 3); // Random fee percentage between 1-3%
-
-            try {
-                $transactionService->processTransaction($user, [
-                    'transaction_date' => $date->toDateString(),
-                    'type' => 'cash-in',
-                    'amount' => $amount,
-                    'fee_percentage' => $feePercentage,
-                    'category_id' => $cashInCategories[array_rand($cashInCategories)],
-                    'notes' => 'Sample cash-in transaction',
-                ]);
-            } catch (\Exception $e) {
-                // Log error but continue seeding
-                \Log::error('Error seeding transaction: ' . $e->getMessage());
-            }
-        }
-
-        // Cash Out transactions
-        for ($i = 0; $i < 12; $i++) {
-            $amount = rand(3000, 30000);
-            $date = $now->copy()->subDays(rand(0, 29));
-            $feePercentage = rand(1, 3); // Random fee percentage between 1-3%
-
-            try {
-                $transactionService->processTransaction($user, [
-                    'transaction_date' => $date->toDateString(),
-                    'type' => 'cash-out',
-                    'amount' => $amount,
-                    'fee_percentage' => $feePercentage,
-                    'category_id' => $cashOutCategories[array_rand($cashOutCategories)],
-                    'notes' => 'Sample cash-out transaction',
-                ]);
-            } catch (\Exception $e) {
-                // Log error but continue seeding
-                \Log::error('Error seeding transaction: ' . $e->getMessage());
-            }
+            Category::firstOrCreate(['name' => $category['name']], $category);
         }
     }
 }

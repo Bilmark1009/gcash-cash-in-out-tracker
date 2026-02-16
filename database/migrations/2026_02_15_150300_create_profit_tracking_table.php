@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('profit_tracking', function (Blueprint $table) {
+        Schema::create('profit_trackings', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->unique()->constrained()->onDelete('cascade');
             $table->decimal('total_profit', 12, 2)->default(0);
@@ -29,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('profit_tracking');
+        Schema::dropIfExists('profit_trackings');
     }
 };

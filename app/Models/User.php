@@ -27,6 +27,7 @@ class User extends Authenticatable
         'gcash_balance',
         'cash_balance',
         'default_fee_percentage',
+        'onboarded',
     ];
 
     /**

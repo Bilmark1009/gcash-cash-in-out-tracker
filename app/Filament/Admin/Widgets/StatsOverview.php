@@ -43,12 +43,12 @@ class StatsOverview extends BaseWidget
         return [
             Stat::make('Total Cash In (This Month)', '₱' . number_format($totalCashIn, 2))
                 ->description('Cash inflows')
-                ->descriptionIcon('heroicon-m-arrow-trending-up')
+                ->descriptionIcon('heroicon-m-arrow-up')
                 ->color('success')
                 ->icon('heroicon-o-arrow-up-circle'),
             Stat::make('Total Cash Out (This Month)', '₱' . number_format($totalCashOut, 2))
                 ->description('Cash outflows')
-                ->descriptionIcon('heroicon-m-arrow-trending-down')
+                ->descriptionIcon('heroicon-m-arrow-down')
                 ->color('danger')
                 ->icon('heroicon-o-arrow-down-circle'),
             Stat::make('Profit This Month', '₱' . number_format($totalFees, 2))
@@ -58,12 +58,12 @@ class StatsOverview extends BaseWidget
                 ->icon('heroicon-o-bolt'),
             Stat::make('Total Cumulative Profit', '₱' . number_format($totalProfit, 2))
                 ->description('All time profit')
-                ->descriptionIcon('heroicon-m-trending-up')
+                ->descriptionIcon('heroicon-m-chart-bar')
                 ->color('info')
                 ->icon('heroicon-o-chart-bar'),
             Stat::make('GCash Balance', '₱' . number_format($user->gcash_balance, 2))
                 ->description('Available in GCash')
-                ->descriptionIcon('heroicon-m-currency-dollar')
+                ->descriptionIcon('heroicon-m-wallet')
                 ->color('primary')
                 ->icon('heroicon-o-wallet'),
             Stat::make('Cash Balance', '₱' . number_format($user->cash_balance, 2))

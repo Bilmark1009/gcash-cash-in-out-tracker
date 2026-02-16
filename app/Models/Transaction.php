@@ -121,3 +121,5 @@ class Transaction extends Model
             'cash_balance_after' => $currentCashBalance - ($this->amount - $feeAmount),
         ];
     }
+}
+
