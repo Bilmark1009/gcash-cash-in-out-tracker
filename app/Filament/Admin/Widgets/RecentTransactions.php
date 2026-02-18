@@ -31,8 +31,6 @@ class RecentTransactions extends BaseWidget
                         'success' => 'cash-in',
                         'danger' => 'cash-out',
                     ]),
-                TextColumn::make('category.name')
-                    ->label('Category'),
                 TextColumn::make('amount')
                     ->money('PHP', locale: 'en_US')
                     ->alignment('right'),

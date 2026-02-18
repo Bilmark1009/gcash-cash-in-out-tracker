@@ -23,6 +23,11 @@ class TransactionResource extends Resource
 
     protected static ?int $navigationSort = 1;
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     public static function form(Form $form): Form
     {
         return $form
@@ -48,7 +53,7 @@ class TransactionResource extends Resource
                             ->numeric()
                             ->inputMode('decimal')
                             ->minValue(0.01)
-                            ->live(onBlur: true)
+                            ->live()
                             ->afterStateUpdated(function (Set $set, Get $get) {
                                 static::updateFeeAmount($set, $get);
                             })
@@ -60,7 +65,7 @@ class TransactionResource extends Resource
                             ->minValue(0)
                             ->maxValue(100)
                             ->step(0.01)
-                            ->live(onBlur: true)
+                            ->live()
                             ->afterStateUpdated(function (Set $set, Get $get) {
                                 static::updateFeeAmount($set, $get);
                             })
@@ -88,17 +93,21 @@ class TransactionResource extends Resource
                         
                         Forms\Components\Placeholder::make('balance_preview')
                             ->label('Balance Preview')
-                            ->content(function ($get) {
+                            ->content(function (Get $get) {
                                 $user = Auth::user();
                                 if (!$user) return 'N/A';
                                 
                                 $type = $get('type');
+                                if (!$type) return 'Please select a transaction type to see preview.';
+
                                 $amount = (float) ($get('amount') ?? 0);
+                                if ($amount <= 0) return 'Please enter an amount to see preview.';
+
                                 $feePercentage = (float) ($get('fee_percentage') ?? $user->default_fee_percentage);
                                 $feeAmount = round($amount * ($feePercentage / 100), 2);
                                 
-                                $currentGCash = $user->gcash_balance;
-                                $currentCash = $user->cash_balance;
+                                $currentGCash = (float) $user->gcash_balance;
+                                $currentCash = (float) $user->cash_balance;
                                 
                                 if ($type === 'cash-in') {
                                     $newGCash = $currentGCash + $amount;
@@ -117,19 +126,6 @@ class TransactionResource extends Resource
                             }),
                     ])
                     ->columns(1),
-
-                Forms\Components\Section::make('Additional Info')
-                    ->schema([
-                        Forms\Components\Select::make('category_id')
-                            ->relationship('category', 'name')
-                            ->required()
-                            ->preload()
-                            ->label('Category'),
-                        Forms\Components\Textarea::make('notes')
-                            ->columnSpanFull()
-                            ->label('Notes / Remarks'),
-                    ])
-                    ->columns(2),
             ]);
     }
 
@@ -162,10 +158,6 @@ class TransactionResource extends Resource
                     ])
                     ->sortable()
                     ->label('Type'),
-                Tables\Columns\TextColumn::make('category.name')
-                    ->searchable()
-                    ->sortable()
-                    ->label('Category'),
                 Tables\Columns\TextColumn::make('amount')
                     ->money('PHP', locale: 'en_US')
                     ->sortable()
@@ -200,8 +192,6 @@ class TransactionResource extends Resource
                         'cash-in' => 'Cash In',
                         'cash-out' => 'Cash Out',
                     ]),
-                Tables\Filters\SelectFilter::make('category_id')
-                    ->relationship('category', 'name'),
                 Tables\Filters\Filter::make('transaction_date')
                     ->form([
                         Forms\Components\DatePicker::make('from')

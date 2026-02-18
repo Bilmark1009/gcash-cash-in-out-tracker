@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-use App\Models\Category;
 use App\Models\Transaction;
 use App\Models\ProfitTracking;
 use App\Services\TransactionService;
@@ -45,26 +44,5 @@ class DatabaseSeeder extends Seeder
                 'transaction_count' => 0,
             ]
         );
-
-        // Create sample categories
-        $categories = [
-            // Cash In Categories
-            ['name' => 'Sales', 'type' => 'cash-in'],
-            ['name' => 'Refund', 'type' => 'cash-in'],
-            ['name' => 'Payment Received', 'type' => 'cash-in'],
-            ['name' => 'Deposit', 'type' => 'cash-in'],
-            
-            // Cash Out Categories
-            ['name' => 'Inventory', 'type' => 'cash-out'],
-            ['name' => 'Utilities', 'type' => 'cash-out'],
-            ['name' => 'Rent', 'type' => 'cash-out'],
-            ['name' => 'Employee Salary', 'type' => 'cash-out'],
-            ['name' => 'Supplies', 'type' => 'cash-out'],
-            ['name' => 'Withdrawal', 'type' => 'cash-out'],
-        ];
-
-        foreach ($categories as $category) {
-            Category::firstOrCreate(['name' => $category['name']], $category);
-        }
     }
 }

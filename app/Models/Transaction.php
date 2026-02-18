@@ -19,7 +19,6 @@ class Transaction extends Model
         'gcash_balance_after',
         'cash_balance_before',
         'cash_balance_after',
-        'category_id',
         'notes',
     ];
 
@@ -35,11 +34,6 @@ class Transaction extends Model
         'cash_balance_before' => 'decimal:2',
         'cash_balance_after' => 'decimal:2',
     ];
-
-    public function category(): BelongsTo
-    {
-        return $this->belongsTo(Category::class);
-    }
 
     public function user(): BelongsTo
     {

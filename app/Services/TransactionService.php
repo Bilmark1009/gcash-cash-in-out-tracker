@@ -21,7 +21,6 @@ class TransactionService
                 'type' => $data['type'],
                 'amount' => $data['amount'],
                 'fee_percentage' => $data['fee_percentage'] ?? $user->default_fee_percentage,
-                'category_id' => $data['category_id'] ?? null,
                 'notes' => $data['notes'] ?? null,
             ];
 
@@ -103,7 +102,6 @@ class TransactionService
                 'amount' => $data['amount'] ?? $transaction->amount,
                 'fee_percentage' => $data['fee_percentage'] ?? $transaction->fee_percentage,
                 'type' => $data['type'] ?? $transaction->type,
-                'category_id' => $data['category_id'] ?? $transaction->category_id,
                 'notes' => $data['notes'] ?? $transaction->notes,
             ]);
 

@@ -19,17 +19,10 @@
 1. **Transaction Management**
    - Create, read, update, delete transactions
    - Automatic GCash fee calculation (tiered structure)
-   - Category assignment
    - Date-based filtering
    - Notes and custom fields
 
-2. **Category Management**
-   - Separate cash-in and cash-out categories
-   - Create custom categories
-   - Organize transactions efficiently
-   - Pre-populated with common categories
-
-3. **Financial Dashboard**
+2. **Financial Dashboard**
    - Real-time summary cards (Cash In, Cash Out, Fees, Net Profit)
    - 30-day cash flow chart
    - Recent transactions widget
