@@ -79,7 +79,10 @@ class TransactionResource extends Resource
                             })
                             ->label('Fee Percentage (%)'),
                     ])
-                    ->columns(2),
+                    ->columns([
+                        'default' => 1,
+                        'md' => 2,
+                    ]),
 
                 Forms\Components\Section::make('Fee & Balance Preview')
                     ->schema([
@@ -167,23 +170,27 @@ class TransactionResource extends Resource
                     ->numeric(decimalPlaces: 2)
                     ->sortable()
                     ->alignment('right')
-                    ->label('Fee %'),
+                    ->label('Fee %')
+                    ->visibleFrom('md'),
                 Tables\Columns\TextColumn::make('fee_amount')
                     ->money('PHP', locale: 'en_US')
                     ->sortable()
                     ->alignment('right')
-                    ->label('Profit (₱)'),
+                    ->label('Profit (₱)')
+                    ->visibleFrom('sm'),
                 Tables\Columns\TextColumn::make('gcash_balance_after')
                     ->money('PHP', locale: 'en_US')
                     ->sortable()
                     ->alignment('right')
-                    ->label('GCash Balance'),
+                    ->label('GCash Balance')
+                    ->visibleFrom('lg'),
                 Tables\Columns\TextColumn::make('cash_balance_after')
                     ->money('PHP', locale: 'en_US')
                     ->sortable()
                     ->alignment('right')
                     ->label('Cash Balance')
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->visibleFrom('xl'),
             ])
             ->defaultSort('transaction_date', 'desc')
             ->filters([

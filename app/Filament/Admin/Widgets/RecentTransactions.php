@@ -12,7 +12,7 @@ class RecentTransactions extends BaseWidget
 {
     protected static ?string $heading = 'Recent Transactions';
 
-    protected int | string | array $columnSpan = 3;
+    protected int | string | array $columnSpan = 'full';
 
     protected static ?int $sort = 3;
 

@@ -13,7 +13,10 @@ class CashFlowChart extends ChartWidget
 
     protected static ?int $sort = 2;
 
-    protected int | string | array $columnSpan = 2;
+    protected int | string | array $columnSpan = [
+        'default' => 1,
+        'md' => 2,
+    ];
 
     protected function getData(): array
     {

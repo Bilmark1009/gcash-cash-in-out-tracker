@@ -1,5 +1,5 @@
 <div class="space-y-4 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900">
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <!-- Current Balances -->
         <div>
             <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Current GCash Balance</p>
@@ -13,7 +13,7 @@
 
     <div class="border-t border-gray-300 pt-4 dark:border-gray-600">
         <p class="mb-2 text-center text-sm font-semibold text-gray-600 dark:text-gray-400">After Transaction</p>
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
                 <p class="text-sm font-medium text-gray-700 dark:text-gray-300">New GCash Balance</p>
                 <p class="text-lg font-bold {{ $newGCash >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
