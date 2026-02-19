@@ -14,6 +14,10 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Response;
+use Illuminate\Database\Eloquent\Collection;
 
 class TransactionResource extends Resource
 {
@@ -225,6 +229,26 @@ class TransactionResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    ExportBulkAction::make()
+                        ->exports([
+                            \pxlrbt\FilamentExcel\Exports\ExcelExport::make()
+                                ->fromTable()
+                                ->withFilename('transactions-' . date('Y-m-d')),
+                        ])
+                        ->label('Export to Excel'),
+                    Tables\Actions\BulkAction::make('export_pdf')
+                        ->label('Export to PDF')
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->color('danger')
+                        ->action(function (Collection $records) {
+                            $pdf = Pdf::loadView('pdf.transactions', [
+                                'transactions' => $records->sortByDesc('transaction_date'),
+                            ]);
+
+                            return Response::streamDownload(function () use ($pdf) {
+                                echo $pdf->stream();
+                            }, 'transactions-' . date('Y-m-d') . '.pdf');
+                        }),
                 ]),
             ]);
     }
