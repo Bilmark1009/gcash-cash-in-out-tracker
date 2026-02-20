@@ -95,7 +95,7 @@ class Transaction extends Model
         
         return [
             'gcash_balance_before' => $currentGCashBalance,
-            'gcash_balance_after' => $currentGCashBalance + $this->amount,
+            'gcash_balance_after' => $currentGCashBalance - $this->amount,
             'cash_balance_before' => $currentCashBalance,
             'cash_balance_after' => $currentCashBalance + $feeAmount,
         ];

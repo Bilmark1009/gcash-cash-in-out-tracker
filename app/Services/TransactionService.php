@@ -36,18 +36,23 @@ class TransactionService
 
             // Calculate new balances based on transaction type
             if ($transactionData['type'] === 'cash-in') {
-                $transactionData['gcash_balance_after'] = $user->gcash_balance + $transactionData['amount'];
+                $transactionData['gcash_balance_after'] = $user->gcash_balance - $transactionData['amount'];
                 $transactionData['cash_balance_after'] = $user->cash_balance + $transactionData['fee_amount'];
             } else {
                 // cash-out
-                $transactionData['gcash_balance_after'] = $user->gcash_balance - $transactionData['amount'];
+                $transactionData['gcash_balance_after'] = $user->gcash_balance + $transactionData['amount'];
                 $transactionData['cash_balance_after'] = $user->cash_balance - ($transactionData['amount'] - $transactionData['fee_amount']);
             }
 
-            // Validate balances (optional: add minimum balance validation)
-            if ($transactionData['type'] === 'cash-out') {
+            // Validate balances
+            if ($transactionData['type'] === 'cash-in') {
                 if ($transactionData['gcash_balance_after'] < 0) {
                     throw new \Exception('Insufficient GCash balance for this transaction.');
+                }
+            } else {
+                // cash-out
+                if ($transactionData['cash_balance_after'] < 0) {
+                    throw new \Exception('Insufficient cash balance for this transaction.');
                 }
             }
 
@@ -113,10 +118,10 @@ class TransactionService
 
             // Calculate new balances
             if ($transaction->type === 'cash-in') {
-                $newGCashBalance = $transaction->gcash_balance_before + $transaction->amount;
+                $newGCashBalance = $transaction->gcash_balance_before - $transaction->amount;
                 $newCashBalance = $transaction->cash_balance_before + $feeAmount;
             } else {
-                $newGCashBalance = $transaction->gcash_balance_before - $transaction->amount;
+                $newGCashBalance = $transaction->gcash_balance_before + $transaction->amount;
                 $newCashBalance = $transaction->cash_balance_before - ($transaction->amount - $feeAmount);
             }
 
